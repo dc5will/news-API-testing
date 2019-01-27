@@ -14,6 +14,15 @@ function formatQueryParams(params) {
   return queryItems.join('&');
 }
 
+/* ============ EXAMPLE IF USER INPUTS TESLA ==============
+if const params = {
+    q: 'tesla'
+    language: 'en'
+}
+const queryItems = Object.keys(params) // [q, language]
+    .map(key => `${key}=${params[key]}`) // ['q=tesla', 'language=em']
+  return queryItems.join('&'); // 'q=tesla&language=en'
+*/
 
 // add query parameter for search term
 // language=en, tells the API we only want articles written in English.
@@ -38,24 +47,54 @@ function getNews(query, maxResults = 10) {
 
   // call fetch and pass through 2 arguments above.
   fetch(url, options) 
-    .then(response => response.json()) // format the response as JSON
-    .then(responseJson => console.log(responseJson)); // log the response JSON to the console
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error(response.statusText);
+    })
+    .then(responseJson => displayResults(responseJson, maxResults)) // console.log(responseJson
+    .catch(err => {
+      $('#js-error-message').text('Something went wrong: ${err.message}');
+    });
 }
+
+
+// function for displaying results
+function displayResults(responseJson, maxResults) {
+  // clear out any results in the '#results-list'
+  console.log(responseJson);
+  $('#results-list').empty();
+  // iterate through the articles array, stopping at the max number of results
+  for (let i = 0; i < responseJson.articles.length & i < maxResults; i++) {
+    // for each video object in the article array, add a list item to the results with article title, source, autho, description, and image
+    $('#results-list').append(
+      `<li><h3><a href='${responseJson.articles[i].url}'>${responseJson.articles[i].title}</a></h3>
+            <p>${responseJson.articles[i].source.name}</p>
+            <p>By ${responseJson.articles[i].author}</p>
+            <p>${responseJson.articles[i].urlToImage}'>
+            <img src='${responseJson.articles[i].urlToImage}'>
+            </li>`
+    );
+  }
+  $('#results').removeClass('hidden');
+}
+// this function takes ONE argument (responseJson) that's returned as part of our GET request. If there are any results form a previous search, we clear those first using the empty() method.
+
+
+
 
 // watch for the form submission
 function watchForm() {
-  $('form').submit(event => {
-    event.preventDefault();
+  $('form').submit(event => { // waits for form to get submitted
+    event.preventDefault(); 
     // capture the value of the user's input
-    const searchTerm = $('#js-search-term').val();
-    const maxResults = $('#js-max-results').val();
-    getNews(searchTerm, maxResults);
+    const searchTerm = $('#js-search-term').val(); // extracts value provided in search term input
+    const maxResults = $('#js-max-results').val(); // extracts maximum results input
+    getNews(searchTerm, maxResults); // passes these values into getNews function
   });
 }
 
-
-
-
-// run getNews function when code runs. Should return JSON object with information
+// run getNews function when page loads. Should return JSON object with information
 $(watchForm);
     
